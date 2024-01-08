@@ -100,10 +100,15 @@ let edit_t =
 let edit_cmd = Cmd.v (Cmd.info "edit") edit_t
 let init_t = Term.(const init $ const ())
 let init_cmd = Cmd.v (Cmd.info "init") init_t
+let tui_t = Term.(const Ui.start $ const ())
+let tui_cmd = Cmd.v (Cmd.info "tui") tui_t
 
 (* Define the command group *)
 let cmd =
-  Cmd.group ?default:(Some ls_t) (Cmd.info "p") [ ls_cmd; edit_cmd; init_cmd ]
+  Cmd.group
+    ?default:(Some ls_t)
+    (Cmd.info "p")
+    [ ls_cmd; edit_cmd; init_cmd; tui_cmd ]
 ;;
 
 let () = exit @@ Cmd.eval cmd

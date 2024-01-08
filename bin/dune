@@ -1,4 +1,4 @@
 (executable
  (public_name p)
  (name main)
- (libraries db cmdliner caqti-lwt.unix caqti-driver-sqlite3))
+ (libraries db cmdliner caqti-lwt.unix caqti-driver-sqlite3 ui))

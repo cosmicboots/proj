@@ -14,6 +14,7 @@ depends: [
   "petrol"
   "caqti-driver-sqlite3"
   "caqti-lwt"
+  "minttea"
   "odoc" {with-doc}
 ]
 build: [
