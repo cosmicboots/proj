@@ -1,88 +1,51 @@
-open Minttea
-open Db
+open Notty
+open Notty_unix
 
-type column =
-  | Description
-  | Tags
-
-type mode =
-  { projects : Project.t list
-  ; cursor : int * column
-  }
-
-let initial_model () =
-  { projects =
-      Project.
-        [ { id = 0; dirname = "test"; description = "test"; tags = [ "test" ] }
-        ; { id = 1; dirname = "test2"; description = "test"; tags = [ "test" ] }
-        ; { id = 2; dirname = "test3"; description = "test"; tags = [ "test" ] }
-        ]
-  ; cursor = 0, Description
-  }
-;;
-
-let init _model = Command.Noop
-
-let update event model =
-  match event with
-  | Event.KeyDown "q" -> model, Command.Quit
-  | Event.KeyDown ("j" | "down") ->
-    ( { model with
-        cursor =
-          ( min (fst model.cursor + 1) (List.length model.projects - 1)
-          , snd model.cursor )
-      }
-    , Command.Noop )
-  | Event.KeyDown ("k" | "up") ->
-    ( { model with cursor = max (fst model.cursor - 1) 0, snd model.cursor }
-    , Command.Noop )
-  | Event.KeyDown ("h" | "left") ->
-    { model with cursor = fst model.cursor, Description }, Command.Noop
-  | Event.KeyDown ("l" | "right") ->
-    { model with cursor = fst model.cursor, Tags }, Command.Noop
-  | _ -> model, Command.Noop
-;;
-
-let view model =
-  let c1 = ref 7 in
-  let c2 = ref 11 in
-  let c3 = ref 4 in
-  let table =
-    List.mapi
-      (fun idx p ->
-        let ((a, b, c) as res) =
-          Format.(
-            ( sprintf "%s" p.Db.Project.dirname
-            , sprintf
-                (if snd model.cursor = Description && idx = fst model.cursor
-                 then ">%s<"
-                 else "%s")
-                p.Db.Project.description
-            , sprintf
-                (if snd model.cursor = Tags && idx = fst model.cursor
-                 then ">%s<"
-                 else "%s")
-                (String.concat ", " p.Db.Project.tags) ))
-        in
-        c1 := max !c1 (String.length a);
-        c2 := max !c2 (String.length b);
-        c3 := max !c3 (String.length c);
-        res)
-      model.projects
-  in
+let draw_table projects ~state =
   List.fold_left
-    (fun acc (a, b, c) ->
-      acc ^ Format.sprintf "%-*s | %-*s | %-*s\n" !c1 a !c2 b !c3 c)
-    (Format.sprintf
-       "%*s | %*s | %*s\n"
-       !c1
-       "Project"
-       !c2
-       "Description"
-       !c3
-       "Tags")
-    table
+    (fun (idx, name_col, desc_col, tag_col) (project : Db.Project.t) ->
+      let selected_attr =
+        if idx = State.get_row state
+        then A.(st bold ++ st underline)
+        else A.empty
+      in
+      let name_col =
+        I.(name_col <-> string A.(fg blue ++ selected_attr) project.dirname)
+      in
+      let desc_col =
+        I.(desc_col <-> string A.(fg blue ++ selected_attr) project.description)
+      in
+      let tag_col =
+        I.(tag_col <-> string A.(fg blue) @@ String.concat ", " project.tags)
+      in
+      idx + 1, name_col, desc_col, tag_col)
+    (0, I.empty, I.empty, I.empty)
+    projects
 ;;
 
-let app = Minttea.app ~initial_model ~init ~update ~view ()
-let start () = Minttea.start app
+let draw (_w, h) state =
+  let _, a, b, c = draw_table ~state @@ State.get_n_projects state h in
+  let divider = I.(hpad 1 1 @@ char A.(st bold) '|' 1 (height a)) in
+  I.(hcat [ a; divider; b; divider; c ])
+;;
+
+let rec update t state =
+  Term.image t (draw (Term.size t) state);
+  loop t state
+
+and loop t state =
+  match Term.event t with
+  | `Key (`ASCII 'q', _) -> ()
+  | `Key (`ASCII 'J', _) -> update t @@ State.scroll_down state
+  | `Key (`ASCII 'K', _) -> update t @@ State.scroll_up state
+  | `Key (`ASCII 'j', _) -> update t @@ State.down state
+  | `Key (`ASCII 'k', _) -> update t @@ State.up state
+  | `Resize (w, h) -> update t @@ State.set_window_size w h state
+  | _ -> loop t state
+;;
+
+let start () =
+  let t = Term.create () in
+  update t @@ State.init ~window_size:(Term.size t) ();
+  Term.release t
+;;

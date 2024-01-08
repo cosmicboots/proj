@@ -10,11 +10,12 @@ bug-reports: "https://github.com/cosmicboots/proj/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.12"}
+  "base"
   "cmdliner"
   "petrol"
   "caqti-driver-sqlite3"
   "caqti-lwt"
-  "minttea"
+  "notty"
   "odoc" {with-doc}
 ]
 build: [

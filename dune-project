@@ -15,6 +15,14 @@
  (name proj)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune cmdliner petrol caqti-driver-sqlite3 caqti-lwt minttea)
+ (depends
+  ocaml
+  dune
+  base
+  cmdliner
+  petrol
+  caqti-driver-sqlite3
+  caqti-lwt
+  notty)
  (tags
   (topics "to describe" your project)))
