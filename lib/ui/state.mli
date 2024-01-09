@@ -1,7 +1,44 @@
 type t
 
+module EditState : sig
+  type t
+
+  val init : string -> t
+
+  (** [get_text s] returns the text in the edit state [s]. *)
+  val get_text : t -> string
+
+  (** [set_cursor_offset s n] returns the state [s] with the cursor offset
+      set to [n]. *)
+  val cursor_offset : t -> int
+
+  (** [insert_char c s] returns the state [s] with the character [c] inserted
+      at the cursor position. *)
+  val insert_char : char -> t -> t
+
+  (** [delete_char s] returns the state [s] with the character at the cursor
+      position deleted. *)
+  val delete_char : t -> t
+
+  (** [right s] returns the state [s] with the cursor moved right. *)
+  val right : t -> t
+
+  (** [left s] returns the state [s] with the cursor moved left. *)
+  val left : t -> t
+end
+
+type column =
+  | Description
+  | Tags
+
 (** [get_window_size ()] returns the size of the window. *)
 val set_window_size : int -> int -> t -> t
+
+val current_col : t -> column
+val start_edit : t -> t
+val get_edit : t -> EditState.t option
+val update_edit : t -> EditState.t -> t
+val commit_edit : t -> t
 
 (** [get_projects s] returns the list of all projects in [s]. *)
 val get_projects : t -> Db.Project.t list
@@ -22,6 +59,9 @@ val down : t -> t
 
 (** [up s] returns the state [s] with the cursor moved up. *)
 val up : t -> t
+
+val left : t -> t
+val right : t -> t
 
 (** Get an initial state. *)
 val init : ?window_size:int * int -> unit -> t
