@@ -87,19 +87,28 @@ let get_edit s = s.edit_state
 let update_edit s e = { s with edit_state = Some e }
 let commit_edit s = (* TODO *) { s with edit_state = None }
 
+let prevent_oob s =
+  { s with
+    selected_row =
+      min s.selected_row (List.length s.projects - s.starting_row - 1)
+  }
+;;
+
 let scroll_down s =
   { s with
     starting_row = min (s.starting_row + 1) (List.length s.projects - 1)
   }
+  |> prevent_oob
 ;;
 
 let scroll_up s = { s with starting_row = max (s.starting_row - 1) 0 }
 
 let down s =
   let new_pos = min (s.selected_row + 1) (snd s.window_size) in
-  if new_pos >= snd s.window_size
-  then scroll_down s
-  else { s with selected_row = new_pos }
+  (if new_pos >= snd s.window_size
+   then scroll_down s
+   else { s with selected_row = new_pos })
+  |> prevent_oob
 ;;
 
 let up s =
