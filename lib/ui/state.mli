@@ -38,7 +38,16 @@ val current_col : t -> column
 val start_edit : t -> t
 val get_edit : t -> EditState.t option
 val update_edit : t -> EditState.t -> t
-val commit_edit : t -> t
+
+(** [update_projects s ps] returns the state [s] with the projects set to [ps]. *)
+val update_projects : t -> Db.Project.t list -> t
+
+(** [commit_edit s] returns the state [s] with the edit state committed to the
+    db. *)
+val commit_edit
+  :  t
+  -> (module Caqti_lwt.CONNECTION)
+  -> (t, [> Caqti_error.call_or_retrieve ]) Lwt_result.t
 
 (** [get_projects s] returns the list of all projects in [s]. *)
 val get_projects : t -> Db.Project.t list
@@ -64,4 +73,4 @@ val left : t -> t
 val right : t -> t
 
 (** Get an initial state. *)
-val init : ?window_size:int * int -> unit -> t
+val init : ?window_size:int * int -> Db.Project.t list -> t

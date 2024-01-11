@@ -97,10 +97,11 @@ let edit_t =
         & info [ "t"; "tags" ] ~docv:"TAGS"))
 ;;
 
+let run_tui () = run_with_db Ui.start
 let edit_cmd = Cmd.v (Cmd.info "edit") edit_t
 let init_t = Term.(const init $ const ())
 let init_cmd = Cmd.v (Cmd.info "init") init_t
-let tui_t = Term.(const Ui.start $ const ())
+let tui_t = Term.(const run_tui $ const ())
 let tui_cmd = Cmd.v (Cmd.info "tui") tui_t
 
 (* Define the command group *)

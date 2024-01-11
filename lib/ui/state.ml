@@ -58,16 +58,6 @@ type t =
   ; edit_state : EditState.t option
   }
 
-let projects () =
-  List.init 100 ~f:(fun x ->
-    Db.Project.
-      { id = x
-      ; dirname = Stdlib.Format.sprintf "Test %d" x
-      ; description = "description test" ^ Int.to_string x
-      ; tags = [ "asdf"; "asdf" ]
-      })
-;;
-
 let get_projects s = s.projects
 let get_n_projects s n = List.take (List.drop s.projects s.starting_row) n
 let get_row s = s.selected_row
@@ -85,7 +75,36 @@ let start_edit s =
 
 let get_edit s = s.edit_state
 let update_edit s e = { s with edit_state = Some e }
-let commit_edit s = (* TODO *) { s with edit_state = None }
+
+let commit_edit s conn =
+  let cproj = List.nth_exn s.projects (s.selected_row + s.starting_row) in
+  let open Lwt_result.Syntax in
+  let* () =
+    match s.edit_state with
+    | Some e ->
+      (match s.selected_column with
+       | Description ->
+         let* () =
+           Db.Project.update
+             ~dirname:cproj.dirname
+             ~description:(EditState.get_text e)
+             conn
+         in
+         Lwt.return_ok ()
+       | Tags ->
+         let* () =
+           Db.Project.update
+             ~dirname:cproj.dirname
+             ~tags:(String.split ~on:',' (EditState.get_text e))
+             conn
+         in
+         Lwt.return_ok ())
+    | None -> Lwt.return_ok ()
+  in
+  Lwt.return_ok { s with edit_state = None }
+;;
+
+let update_projects s projects = { s with projects }
 
 let prevent_oob s =
   { s with
@@ -135,8 +154,8 @@ let right s =
   }
 ;;
 
-let init ?(window_size = 0, 0) () =
-  { projects = projects ()
+let init ?(window_size = 0, 0) projects =
+  { projects
   ; selected_row = 0
   ; starting_row = 0
   ; window_size
